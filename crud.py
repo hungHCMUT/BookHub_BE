@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
-from schemas import users, books, membership
-from models import User, Book, Membership
+from schemas import users, books, membership, friends
+from models import User, Book, Membership, Friend
 
 
 # User
@@ -136,3 +136,43 @@ def delete_membership(db: Session, user_id: int):
 
 
 # Friend
+def create_friend(db: Session, friend: friends.UserFriendshipCreate, user_id: int):
+    db_friend = Friend(UserID=user_id,
+                       FriendUserID=friend.FriendUserId,
+                       Status=friend.Status)
+    db.add(db_friend)
+    db.commit()
+    db.refresh(db_friend)
+    return db_friend
+
+
+def get_friend_by_id(db: Session, user_id: int):
+    return db.query(Friend).filter(Friend.UserID == user_id).first()
+
+
+def get_friend_list(db: Session):
+    return db.query(Friend).all()
+
+
+def update_friend(db: Session, user_id: int, friend_update: friends.UserFriendshipUpdate):
+    new_friend = db.query(Friend).filter(
+        Friend.UserID == user_id).first()
+    if not new_friend:
+        return None
+
+    for key, value in friend_update.dict(exclude_unset=True).items():
+        setattr(new_friend, key, value)
+
+    db.commit()
+    db.refresh(new_friend)
+    return new_friend
+
+
+def delete_friend(db: Session, user_id: int):
+    friend_retrieve = db.query(Friend).filter(
+        Friend.UserID == user_id).first()
+    if not friend_retrieve:
+        return None
+    db.delete(friend_retrieve)
+    db.commit()
+    return friend_retrieve
